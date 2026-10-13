@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RadioCalico - Local Prototype</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+      font-weight: 500;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .items-list {
+      margin-top: 40px;
+      border-top: 1px solid #eee;
+      padding-top: 30px;
+    }
+    .item {
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+    }
+    .item-content {
+      flex: 1;
+    }
+    .item-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .item-description {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 5px;
+    }
+    .item-date {
+      color: #999;
+      font-size: 12px;
+    }
+    .item-delete {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .item-delete:hover {
+      background: #c82333;
+    }
+    .empty-state {
+      text-align: center;
+      color: #999;
+      padding: 40px 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RadioCalico Prototype</h1>
+
+    <div class="form-group">
+      <label for="itemName">Item Name</label>
+      <input type="text" id="itemName" placeholder="Enter item name">
+    </div>
+
+    <div class="form-group">
+      <label for="itemDescription">Description</label>
+      <textarea id="itemDescription" placeholder="Enter description"></textarea>
+    </div>
+
+    <button onclick="addItem()">Add Item</button>
+
+    <div class="items-list">
+      <h2 style="margin-bottom: 20px;">Items</h2>
+      <div id="itemsContainer" class="empty-state">
+        <p>No items yet. Add one above!</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadItems() {
+      try {
+        const response = await fetch('/api/items');
+        const items = await response.json();
+
+        const container = document.getElementById('itemsContainer');
+
+        if (items.length === 0) {
+          container.innerHTML = '<p>No items yet. Add one above!</p>';
+          container.className = 'empty-state';
+          return;
+        }
+
+        container.className = '';
+        container.innerHTML = items.map(item => `
+          <div class="item">
+            <div class="item-content">
+              <div class="item-name">${escapeHtml(item.name)}</div>
+              <div class="item-description">${escapeHtml(item.description || '')}</div>
+              <div class="item-date">${new Date(item.created_at).toLocaleString()}</div>
+            </div>
+            <button class="item-delete" onclick="deleteItem(${item.id})">Delete</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading items:', error);
+      }
+    }
+
+    async function addItem() {
+      const name = document.getElementById('itemName').value.trim();
+      const description = document.getElementById('itemDescription').value.trim();
+
+      if (!name) {
+        alert('Please enter an item name');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/items', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description })
+        });
+
+        if (response.ok) {
+          document.getElementById('itemName').value = '';
+          document.getElementById('itemDescription').value = '';
+          loadItems();
+        }
+      } catch (error) {
+        console.error('Error adding item:', error);
+      }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('Delete this item?')) return;
+
+      try {
+        const response = await fetch(`/api/items/${id}`, { method: 'DELETE' });
+        if (response.ok) {
+          loadItems();
+        }
+      } catch (error) {
+        console.error('Error deleting item:', error);
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    loadItems();
+  </script>
+</body>
+</html>
