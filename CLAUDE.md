@@ -60,8 +60,15 @@ Hjälpdokument inför möte med inköpare
 
 ## Testing
 
-Run `npm test` (Vitest). Also `npm run test:server`, `npm run test:client`, `npm run test:watch`.
+Run `npm test` (Vitest). Also `npm run test:server`, `npm run test:client`, `npm run test:watch`, `npm run test:coverage`.
 
 - Backend (`test/server`): supertest against `createApp(":memory:")` exported from `server.js`. `server.js` only listens when run directly; `DB_PATH` and `PORT` env vars override the defaults.
 - Frontend (`test/client`): jsdom. `test/helpers/loadScripts.js` loads a `public/*.html` page and runs its `public/js` classic scripts in order, so tests call their globals via `page.run("...")` with `fetch` mocked. HLS/audio code (`initializeStream`, stall watchdog) is not covered.
 - Needs Node 22+. jsdom is pinned to v24 because newer versions require Node 22.12+.
+- Frontend coverage reports 0% because scripts run via `vm` in jsdom, which the coverage tool cannot see; backend coverage is real. Don't add a coverage threshold until this is fixed.
+
+## CI / GitHub Actions
+
+- `.github/workflows/ci.yml` (push to `master`, all PRs): unit tests with coverage (uploaded as an artifact), `npm audit` (fails on high/critical in production deps; dev deps report only), dependency review (PRs only), and a gitleaks secret scan.
+- `.github/workflows/codeql.yml` (push to `master`, PRs, weekly Monday): CodeQL static analysis with `security-extended` queries.
+- `.github/workflows/claude.yml`: runs Claude Code when `@claude` is mentioned in issues/PRs. Uses the `ANTHROPIC_API_KEY` repository secret as `ANTHROPIC_AUTH_TOKEN` and the `ANTHROPIC_BASE_URL` repository variable (gateway endpoint). Never commit keys or the gateway URL.
