@@ -57,3 +57,11 @@ Går det att kopiera ett TI för att skapa ett nytt?
 Saknas/bör det tas bort någon logik kopplad till när ett TI får sparas? Tomma priser? Tider?
 
 Hjälpdokument inför möte med inköpare
+
+## Testing
+
+Run `npm test` (Vitest). Also `npm run test:server`, `npm run test:client`, `npm run test:watch`.
+
+- Backend (`test/server`): supertest against `createApp(":memory:")` exported from `server.js`. `server.js` only listens when run directly; `DB_PATH` and `PORT` env vars override the defaults.
+- Frontend (`test/client`): jsdom. `test/helpers/loadScripts.js` loads a `public/*.html` page and runs its `public/js` classic scripts in order, so tests call their globals via `page.run("...")` with `fetch` mocked. HLS/audio code (`initializeStream`, stall watchdog) is not covered.
+- Needs Node 22+. jsdom is pinned to v24 because newer versions require Node 22.12+.
